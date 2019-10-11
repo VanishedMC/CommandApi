@@ -1,28 +1,29 @@
 package com.vanishedmc.commandapi;
 
+import java.util.List;
 import java.util.ArrayList;
 import java.lang.reflect.Method;
-
-import com.vanishedmc.commandapi.expression.ExpressionConstant;
-import org.apache.commons.lang.ArrayUtils;
 import org.bukkit.command.CommandSender;
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
-
 import com.vanishedmc.commandapi.expression.Expression;
 import com.vanishedmc.commandapi.expression.ExpressionRest;
-
+import com.vanishedmc.commandapi.expression.ExpressionConstant;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.Player;
 
 class CommandMethod {
 
-	private final CommandExecutor executor;
-	private final Method method;
-
-	private Expression[] expressions = new Expression[0];
+    private String permission;
+    private final Method method;
+    private AllowedSender allowedSender;
+    private final CommandExecutor executor;
+    private Expression[] expressions = new Expression[0];
 	
-	CommandMethod(CommandExecutor executor, Method method, String syntax) throws UnknownExpressionException {
-		this.executor = executor;
-		this.method = method;
+	CommandMethod(CommandExecutor executor, Method method, AllowedSender allowedSender, String syntax, String permission) throws UnknownExpressionException {
+	    this.method = method;
+        this.executor = executor;
+        this.permission = permission;
+        this.allowedSender = allowedSender;
 
 		ArrayList<Expression> expressions = new ArrayList<>();
         String[] split = syntax.split(" ");
@@ -52,6 +53,14 @@ class CommandMethod {
 	}
 
 	boolean match(CommandSender sender, String[] split){
+	    if(allowedSender == AllowedSender.PLAYER && !(sender instanceof Player)) {
+	        return false;
+        }
+
+        if(allowedSender == AllowedSender.CONSOLE && !(sender instanceof ConsoleCommandSender)) {
+            return false;
+        }
+
 		if(split.length == getExpressions().length){
 			for(int i = 0; i < getExpressions().length; i++){
 				if(!getExpressions()[i].match(sender, split, i, split[i])) {
@@ -111,5 +120,6 @@ class CommandMethod {
         return list.toArray(new Expression[]{});
     }
 
-	Expression[] getExpressions() { return expressions; }
+    String getPermission() { return permission; }
+    Expression[] getExpressions() { return expressions; }
 }
